@@ -1,0 +1,6 @@
+langchain
+langsmith
+openai
+youtube-transcript-api
+sentence-transformers
+python-dotenv
