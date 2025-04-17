@@ -1,3 +1,4 @@
+# Update imports to include OpenAI
 from langgraph.graph import StateGraph
 from tools.youtube_tool import get_youtube_transcript
 from tools.chromadb_tool import store_embeddings
@@ -5,8 +6,8 @@ import os
 from dotenv import load_dotenv
 from langchain_core.documents import Document
 from typing import Dict, Any, TypedDict
-from langchain.agents import AgentExecutor, create_openai_functions_agent
-from langchain_community.chat_models import ChatOpenAI
+from langchain.agents import AgentExecutor
+from langchain.agents import create_openai_functions_agent
 from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain.tools import Tool
 from langchain.chains import RetrievalQA
@@ -14,17 +15,21 @@ from langchain.chains import RetrievalQA
 # Load environment variables from .env file
 load_dotenv()
 
-# Set environment variables for LangChain + OpenAI
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+# Set environment variables for LangChain and OpenAI
 LANGCHAIN_API_KEY = os.getenv("LANGCHAIN_API_KEY")
 LANGCHAIN_PROJECT = os.getenv("LANGCHAIN_PROJECT")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+YOUTUBE_API_KEY = os.getenv("YOUTUBE_API_KEY")
 
-os.environ["OPENAI_API_KEY"] = OPENAI_API_KEY
+# Set environment variables
 os.environ["LANGCHAIN_API_KEY"] = LANGCHAIN_API_KEY
 os.environ["LANGCHAIN_PROJECT"] = LANGCHAIN_PROJECT
 os.environ["LANGCHAIN_TRACING_V2"] = "true"
+os.environ["OPENAI_API_KEY"] = OPENAI_API_KEY
+os.environ["YOUTUBE_API_KEY"] = YOUTUBE_API_KEY
 
-from langchain_groq import ChatGroq  # 👈 make sure you installed `langchain_groq`
+# Import OpenAI
+from langchain_openai import ChatOpenAI
 
 def get_llm(provider="groq"):
     """Return an LLM instance based on the selected provider."""
@@ -111,9 +116,9 @@ def create_agent_node(state: Dict) -> Dict:
     if not vector_store:
         raise ValueError("No vector store found in state.")
     
-    # Create LLM with lower temperature to reduce creativity
+    # Use OpenAI instead of Groq for more powerful processing
     llm = ChatOpenAI(
-        temperature=0,  # Zero temperature for deterministic outputs
+        temperature=0,
         model="gpt-4-turbo-preview",
         max_tokens=1024
     )
@@ -126,7 +131,7 @@ def create_agent_node(state: Dict) -> Dict:
         llm=llm,
         chain_type="stuff",
         retriever=retriever,
-        return_source_documents=True,  # Changed to True to help with verification
+        return_source_documents=True,
         verbose=True
     )
     
@@ -176,15 +181,16 @@ Your ONLY purpose is to retrieve and provide information from the video transcri
         MessagesPlaceholder(variable_name="agent_scratchpad"),
     ])
     
+    # Use OpenAI functions agent instead of the custom SimpleQAAgent
     agent = create_openai_functions_agent(llm=llm, tools=tools, prompt=prompt)
     agent_executor = AgentExecutor(
         agent=agent, 
         tools=tools, 
         verbose=True,
         handle_parsing_errors=True,
-        max_iterations=3,  # Increased from 1 to 3
-        early_stopping_method="generate",  # Changed from "force" to "generate"
-        return_intermediate_steps=False  # Changed to False for cleaner output
+        max_iterations=3,
+        early_stopping_method="generate",
+        return_intermediate_steps=False
     )
     
     # Create a new state dictionary with all previous keys plus the new one

@@ -1,0 +1,13 @@
+# Default configuration
+llm:
+  provider: groq
+  model: llama3-8b-8192
+  temperature: 0
+
+embeddings:
+  provider: huggingface
+  model: all-MiniLM-L6-v2
+
+retrieval:
+  chunk_size: 100
+  k: 8
